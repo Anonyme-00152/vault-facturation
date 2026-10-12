@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { formatEUR, formatEURCompact } from "@/lib/format";
 
 const config = {
-  amount: { label: "Encaissé", color: "var(--chart-4)" },
+  amount: { label: "CA HT", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
 const monthFormat = new Intl.DateTimeFormat("fr-FR", { month: "short" });

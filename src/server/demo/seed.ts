@@ -10,6 +10,7 @@ import { encrypt } from "../crypto";
 import { db } from "../db";
 import { createDraft, issueInvoice, markPaid, type DraftLine } from "../invoices/service";
 import { hashPassword } from "../auth/password";
+import { DEMO_ACCOUNTS, demoPassword } from "./accounts";
 import { createTotpSecret } from "../auth/totp";
 import {
   CATALOG,
@@ -26,17 +27,6 @@ import {
   slugify,
   type Random,
 } from "./fixtures";
-
-export const DEMO_DOMAIN = "vault-demo.test";
-
-export const DEMO_ACCOUNTS = [
-  { email: `admin@${DEMO_DOMAIN}`, name: "Léa Martin", role: "ADMIN" },
-  { email: `comptable@${DEMO_DOMAIN}`, name: "Camille Rousseau", role: "COMPTABLE" },
-  { email: `lecteur@${DEMO_DOMAIN}`, name: "Hugo Bernard", role: "LECTEUR" },
-] as const;
-
-/** Mot de passe des comptes de démonstration (public : il figure dans le README). */
-export const demoPassword = () => process.env.DEMO_PASSWORD ?? "Vault-Demo-2026!";
 
 const TABLES = [
   "invoice_lines",

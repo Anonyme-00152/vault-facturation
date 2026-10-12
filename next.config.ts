@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
   // Pas de Cache Components : la CSP à nonce impose un rendu dynamique de chaque page,
   // et aucune donnée confidentielle ne doit finir dans un cache partagé.
   serverExternalPackages: ["@node-rs/argon2", "pino", "@react-pdf/renderer"],
+  // `forbidden()` : vraie page 403 quand un rôle n'a pas le droit d'accéder à une ressource.
+  experimental: { authInterrupts: true },
   turbopack: {
     rules: {
       "*.css": {

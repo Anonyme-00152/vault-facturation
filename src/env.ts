@@ -25,6 +25,16 @@ const schema = z.object({
   /** Clé HMAC pour l'index aveugle (recherche exacte sur un champ chiffré). */
   BLIND_INDEX_KEY: key256,
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  /**
+   * Mode démonstration (site public du portfolio) : aide à la connexion pour les
+   * comptes de démo et réinitialisation quotidienne des données. Jamais en production réelle.
+   */
+  DEMO_MODE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  /** Secret partagé avec le planificateur (Vercel Cron) pour la réinitialisation de la démo. */
+  CRON_SECRET: z.string().min(32).optional(),
 });
 
 export type Env = z.infer<typeof schema>;

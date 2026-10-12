@@ -5,7 +5,11 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: false,
+  // Le serveur de développement compile chaque page à la première visite.
+  expect: { timeout: process.env.CI ? 10_000 : 30_000 },
+  timeout: 120_000,
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,

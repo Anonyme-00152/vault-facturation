@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTransition } from "react";
+
+import { logoutAction } from "@/app/(auth)/actions";
 
 import { Logo } from "@/components/brand/logo";
 import {
@@ -61,6 +64,7 @@ export type ShellUser = { name: string; email: string; role: Role };
 
 export function AppSidebar({ user }: { user: ShellUser }) {
   const pathname = usePathname();
+  const [loggingOut, startLogout] = useTransition();
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -127,6 +131,8 @@ export function AppSidebar({ user }: { user: ShellUser }) {
           <button
             type="button"
             aria-label="Se déconnecter"
+            disabled={loggingOut}
+            onClick={() => startLogout(() => logoutAction())}
             className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground group-data-[collapsible=icon]:hidden"
           >
             <LogOut className="size-4" />

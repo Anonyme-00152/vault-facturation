@@ -9,9 +9,10 @@ const percent = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 1,
   signDisplay: "exceptZero",
 });
-const dateShort = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
-const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+const TZ = "Europe/Paris";
+const dateShort = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric", timeZone: TZ });
+const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
+const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: TZ });
 
 /** Espace fine insécable → espace insécable : plus lisible entre les groupes de chiffres. */
 const widenSpaces = (value: string) => value.replace(/\u202f/g, "\u00a0");
