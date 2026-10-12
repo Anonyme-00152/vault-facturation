@@ -6,7 +6,8 @@ import { db, type Tx } from "./db";
 import { logger } from "./logger";
 import { requestContext } from "./request-context";
 
-export type AuditActor = { id: string; label: string } | null;
+/** Auteur d'une action : un utilisateur, une tâche planifiée (id null, libellé seul) ou personne. */
+export type AuditActor = { id: string | null; label: string } | null;
 
 export type AuditEntry = {
   action: AuditAction;
