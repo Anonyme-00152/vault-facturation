@@ -11,9 +11,9 @@
    ─────────────────────────────────────────────────────────────── */
 
 @theme inline {
-  --font-sans: var(--font-mona), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex), ui-monospace, monospace;
-  --font-heading: var(--font-mona), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -232,16 +232,12 @@
 }
 
 @layer components {
-  /* Titres « étendus » façon affiche : Mona Sans en largeur 125 %. */
+  /* Titres : Geist demi-gras, approche serrée façon Lusion. */
   .font-display {
-    font-family: var(--font-mona), ui-sans-serif, system-ui, sans-serif;
-    font-stretch: 125%;
-    font-weight: 800;
-    letter-spacing: -0.035em;
-    line-height: 0.92;
-  }
-  .font-wide {
-    font-stretch: 112%;
+    font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 0.95;
   }
   /* Étiquettes monospace en capitales, façon Lusion. */
   .label-mono {

@@ -114,7 +114,7 @@ export function SiteFooter() {
 
         <p
           aria-hidden
-          className="font-display mt-20 -mb-[0.12em] text-center text-[clamp(5rem,24vw,23rem)] leading-none tracking-[-0.06em] text-foreground select-none"
+          className="font-display mt-20 -mb-[0.12em] text-center text-[clamp(6rem,30vw,29rem)] leading-none tracking-[-0.07em] text-foreground select-none"
         >
           VAULT
         </p>

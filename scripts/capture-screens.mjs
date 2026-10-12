@@ -28,7 +28,7 @@ for (const scheme of ["light", "dark"]) {
   });
   const page = await context.newPage();
   for (const path of paths) {
-    await page.goto(new URL(path, baseURL).toString(), { waitUntil: "networkidle" });
+    await page.goto(new URL(path, baseURL).toString(), { waitUntil: "load", timeout: 120_000 });
     await page.waitForTimeout(Number(process.env.SETTLE_MS ?? 2500));
     if (fullPage) {
       // Fait défiler la page pour déclencher les animations d'apparition.

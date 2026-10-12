@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Mona_Sans } from "next/font/google";
+import { Geist, IBM_Plex_Mono } from "next/font/google";
 import { headers } from "next/headers";
 
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,10 +8,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 
-const mona = Mona_Sans({
+const geist = Geist({
   subsets: ["latin", "latin-ext"],
-  axes: ["wdth"],
-  variable: "--font-mona",
+  variable: "--font-geist",
   display: "swap",
 });
 
@@ -43,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang="fr" suppressHydrationWarning className={`${mona.variable} ${plex.variable}`}>
+    <html lang="fr" suppressHydrationWarning className={`${geist.variable} ${plex.variable}`}>
       <body className="min-h-dvh antialiased">
         <ThemeProvider nonce={nonce}>
           <TooltipProvider delayDuration={200}>

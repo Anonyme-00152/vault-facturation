@@ -45,7 +45,7 @@ export function Hero() {
             <MaskedLines
               as="h1"
               animateOnMount
-              className="font-display text-[clamp(3rem,8.6vw,9.5rem)]"
+              className="font-display text-[clamp(3.4rem,10vw,11rem)]"
               lines={[
                 <span key="a">Vos factures.</span>,
                 <span key="b" className="text-muted-foreground/70">

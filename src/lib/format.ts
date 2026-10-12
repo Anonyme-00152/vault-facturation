@@ -13,8 +13,8 @@ const dateShort = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "sho
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
 
-/** Espace fine insécable → espace insécable : plus lisible avec les chiffres larges de Mona Sans. */
-const widenSpaces = (value: string) => value.replace(/ /g, " ");
+/** Espace fine insécable → espace insécable : plus lisible entre les groupes de chiffres. */
+const widenSpaces = (value: string) => value.replace(/\u202f/g, "\u00a0");
 
 /** Montant en centimes → « 1 234,56 € ». */
 export const formatEUR = (cents: number) => widenSpaces(euro.format(cents / 100));
