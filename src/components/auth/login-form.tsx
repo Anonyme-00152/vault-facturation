@@ -2,6 +2,7 @@
 
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -11,7 +12,16 @@ export function LoginForm() {
   const [visible, setVisible] = useState(false);
 
   return (
-    <form className="space-y-8" noValidate>
+    <form
+      className="space-y-8"
+      method="post"
+      noValidate
+      onSubmit={(event) => {
+        // Maquette : jamais d'envoi, et surtout jamais de mot de passe dans l'URL.
+        event.preventDefault();
+        toast.info("La connexion sera branchée à l'étape « Authentification ».");
+      }}
+    >
       <FieldGroup className="gap-5">
         <Field>
           <FieldLabel htmlFor="email">Adresse e-mail</FieldLabel>
