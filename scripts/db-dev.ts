@@ -19,7 +19,11 @@ const pg = new EmbeddedPostgres({
   password: "vault",
   port: PORT,
   persistent: true,
-  onLog: () => {},
+  // UTF-8 explicite : sous Windows, initdb choisirait sinon l'encodage WIN1252.
+  initdbFlags: ["--encoding=UTF8", "--locale=C"],
+  onLog: (message) => {
+    if (process.env.PG_VERBOSE) console.log(String(message).trim());
+  },
 });
 
 async function main() {

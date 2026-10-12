@@ -1,0 +1,314 @@
+// Vault Facturation : schéma de données.
+// Les champs suffixés `Enc` sont chiffrés en AES-256-GCM par l'application
+// (src/server/crypto.ts) : la base ne voit jamais la donnée en clair.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  COMPTABLE
+  LECTEUR
+}
+
+enum ClientType {
+  ENTREPRISE
+  PARTICULIER
+}
+
+/// « En retard » n'est pas stocké : c'est une facture SENT dont l'échéance est dépassée.
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+}
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGIN_LOCKED
+  LOGOUT
+  SESSION_EXPIRED
+  MFA_ENROLLED
+  MFA_SUCCESS
+  MFA_FAILURE
+  MFA_RESET
+  BACKUP_CODE_USED
+  BACKUP_CODES_REGENERATED
+  PASSWORD_CHANGED
+  CHARTER_ACCEPTED
+  CHARTER_PUBLISHED
+  ACCESS_DENIED
+  CLIENT_VIEWED
+  CLIENT_CREATED
+  CLIENT_UPDATED
+  CLIENT_DELETED
+  CLIENT_ANONYMIZED
+  CLIENT_EXPORTED
+  INVOICE_CREATED
+  INVOICE_UPDATED
+  INVOICE_DELETED
+  INVOICE_ISSUED
+  INVOICE_STATUS_CHANGED
+  INVOICE_PDF_EXPORTED
+  USER_CREATED
+  USER_UPDATED
+  USER_DISABLED
+  USER_ENABLED
+  AUDIT_EXPORTED
+  AUDIT_VERIFIED
+  RETENTION_PURGE
+  SETTINGS_UPDATED
+  DEMO_RESET
+}
+
+model User {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  /// Adresse professionnelle, en minuscules : identifiant de connexion.
+  email              String    @unique
+  name               String
+  passwordHash       String    @map("password_hash")
+  role               Role
+  totpSecretEnc      String?   @map("totp_secret_enc")
+  totpEnabledAt      DateTime? @map("totp_enabled_at")
+  /// Dernier pas de temps TOTP accepté : un même code ne peut pas servir deux fois (rejeu).
+  totpLastStep       Int?      @map("totp_last_step")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  passwordChangedAt  DateTime  @default(now()) @map("password_changed_at")
+  disabledAt         DateTime? @map("disabled_at")
+  /// Comptes de démonstration : protégés contre les modifications de sécurité.
+  isDemo             Boolean   @default(false) @map("is_demo")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  sessions          Session[]
+  backupCodes       BackupCode[]
+  acceptances       CharterAcceptance[]
+  publishedCharters CharterVersion[]
+  clientsCreated    Client[]
+  invoicesCreated   Invoice[]
+
+  @@map("users")
+}
+
+model Session {
+  /// Empreinte SHA-256 de l'identifiant de session : la valeur brute ne vit que dans le cookie chiffré.
+  id            String    @id
+  userId        String    @map("user_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at")
+  expiresAt     DateTime  @map("expires_at")
+  mfaVerifiedAt DateTime? @map("mfa_verified_at")
+  ip            String?
+  userAgent     String?   @map("user_agent")
+  revokedAt     DateTime? @map("revoked_at")
+  revokedReason String?   @map("revoked_reason")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model BackupCode {
+  id       String    @id @default(uuid(7)) @db.Uuid
+  userId   String    @map("user_id") @db.Uuid
+  codeHash String    @map("code_hash")
+  usedAt   DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@map("backup_codes")
+}
+
+model CharterVersion {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  version       Int      @unique
+  title         String
+  content       String
+  publishedAt   DateTime @default(now()) @map("published_at")
+  publishedById String?  @map("published_by_id") @db.Uuid
+
+  publishedBy User?               @relation(fields: [publishedById], references: [id], onDelete: SetNull)
+  acceptances CharterAcceptance[]
+
+  @@map("charter_versions")
+}
+
+model CharterAcceptance {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  charterVersionId String   @map("charter_version_id") @db.Uuid
+  acceptedAt       DateTime @default(now()) @map("accepted_at")
+  ip               String?
+  userAgent        String?  @map("user_agent")
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version CharterVersion @relation(fields: [charterVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, charterVersionId])
+  @@map("charter_acceptances")
+}
+
+model Client {
+  id               String     @id @default(uuid(7)) @db.Uuid
+  type             ClientType
+  /// Raison sociale (entreprise) ou nom complet (particulier).
+  name             String
+  siret            String?
+  vatNumber        String?    @map("vat_number")
+  emailEnc         String?    @map("email_enc")
+  /// Index aveugle HMAC-SHA256 : recherche exacte par email sans déchiffrer.
+  emailHash        String?    @map("email_hash")
+  phoneEnc         String?    @map("phone_enc")
+  addressEnc       String?    @map("address_enc")
+  paymentTermsDays Int        @default(30) @map("payment_terms_days")
+  lastActivityAt   DateTime   @default(now()) @map("last_activity_at")
+  anonymizedAt     DateTime?  @map("anonymized_at")
+  createdById      String?    @map("created_by_id") @db.Uuid
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  createdBy User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  invoices  Invoice[]
+
+  @@index([name])
+  @@index([emailHash])
+  @@index([lastActivityAt])
+  @@map("clients")
+}
+
+model Invoice {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  /// Attribué à l'émission uniquement (FAC-2026-000142) : un brouillon n'a pas de numéro.
+  number            String?       @unique
+  year              Int?
+  sequence          Int?
+  status            InvoiceStatus @default(DRAFT)
+  clientId          String        @map("client_id") @db.Uuid
+  issueDate         DateTime?     @map("issue_date") @db.Date
+  serviceDate       DateTime?     @map("service_date") @db.Date
+  dueDate           DateTime      @map("due_date") @db.Date
+  /// Délai de paiement (jours) : l'échéance est recalculée à partir de la date d'émission.
+  paymentTermsDays  Int           @default(30) @map("payment_terms_days")
+  totalHtCents      Int           @default(0) @map("total_ht_cents")
+  totalVatCents     Int           @default(0) @map("total_vat_cents")
+  totalTtcCents     Int           @default(0) @map("total_ttc_cents")
+  /// Identité du client figée à l'émission (chiffrée) : la facture reste exacte même si la fiche change.
+  clientSnapshotEnc String?       @map("client_snapshot_enc")
+  /// Identité du vendeur figée à l'émission (données de l'entreprise, non personnelles).
+  sellerSnapshot    Json?         @map("seller_snapshot")
+  notes             String?
+  sentAt            DateTime?     @map("sent_at")
+  paidAt            DateTime?     @map("paid_at")
+  createdById       String?       @map("created_by_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  client    Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  lines     InvoiceLine[]
+
+  @@unique([year, sequence])
+  @@index([status, dueDate])
+  @@index([clientId])
+  @@index([issueDate])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id             String @id @default(uuid(7)) @db.Uuid
+  invoiceId      String @map("invoice_id") @db.Uuid
+  position       Int
+  designation    String
+  /// Quantité en millièmes (1,5 h → 1500).
+  quantityMilli  Int    @map("quantity_milli")
+  unitPriceCents Int    @map("unit_price_cents")
+  /// Taux de TVA en points de base (20 % → 2000).
+  vatRateBp      Int    @map("vat_rate_bp")
+  totalHtCents   Int    @map("total_ht_cents")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceId, position])
+  @@map("invoice_lines")
+}
+
+/// Compteur de numérotation par année. Incrémenté dans la transaction d'émission :
+/// un échec annule aussi l'incrément, donc aucun trou.
+model InvoiceSequence {
+  year       Int @id
+  lastNumber Int @map("last_number")
+
+  @@map("invoice_sequences")
+}
+
+/// Journal d'audit en ajout seul. Les triggers PostgreSQL interdisent UPDATE,
+/// DELETE et TRUNCATE et calculent le chaînage SHA-256 (voir la migration).
+model AuditLog {
+  id         BigInt      @id @default(autoincrement())
+  /// Rang dans la chaîne, attribué par le trigger sous verrou (ordre de chaînage).
+  seq        BigInt?     @unique
+  at         DateTime    @default(now()) @db.Timestamptz(6)
+  actorId    String?     @map("actor_id") @db.Uuid
+  actorLabel String?     @map("actor_label")
+  action     AuditAction
+  entityType String?     @map("entity_type")
+  entityId   String?     @map("entity_id")
+  ip         String?
+  userAgent  String?     @map("user_agent")
+  metadata   Json?
+  prevHash   String      @default("") @map("prev_hash")
+  hash       String      @default("") @map("hash")
+
+  @@index([at])
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_log")
+}
+
+/// Fenêtres de limitation de débit (connexion, API). Stockées en base :
+/// fonctionne avec plusieurs instances, sans Redis.
+model RateLimit {
+  key          String    @id
+  count        Int       @default(0)
+  windowStart  DateTime  @default(now()) @map("window_start")
+  blockedUntil DateTime? @map("blocked_until")
+
+  @@map("rate_limits")
+}
+
+/// Paramètres de l'organisation (une seule ligne).
+model Settings {
+  id                     Int      @id @default(1)
+  companyName            String   @map("company_name")
+  legalForm              String   @map("legal_form")
+  shareCapitalCents      Int      @map("share_capital_cents")
+  siren                  String
+  rcs                    String
+  vatNumber              String   @map("vat_number")
+  addressLine1           String   @map("address_line1")
+  addressLine2           String?  @map("address_line2")
+  postalCode             String   @map("postal_code")
+  city                   String
+  email                  String
+  phone                  String
+  iban                   String
+  bic                    String
+  latePenaltyRateBp      Int      @default(1215) @map("late_penalty_rate_bp")
+  /// Durée d'inactivité (mois) au-delà de laquelle un client est anonymisé.
+  clientRetentionMonths  Int      @default(36) @map("client_retention_months")
+  /// Durée légale de conservation des factures (années).
+  invoiceRetentionYears  Int      @default(10) @map("invoice_retention_years")
+  auditRetentionMonths   Int      @default(12) @map("audit_retention_months")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
