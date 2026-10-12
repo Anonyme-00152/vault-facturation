@@ -9,8 +9,8 @@ export default defineConfig({
     seed: "tsx --conditions=react-server prisma/seed.ts",
   },
   datasource: {
-    // `prisma generate` n'a pas besoin de base (build Docker, CI) ;
-    // les commandes de migration échouent clairement si la variable manque.
-    url: process.env.DATABASE_URL ?? "",
+    // Les migrations passent par la connexion directe quand un pooler est utilisé (Neon, Supabase…).
+    // `prisma generate` n'a pas besoin de base (build Docker, CI).
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "",
   },
 });

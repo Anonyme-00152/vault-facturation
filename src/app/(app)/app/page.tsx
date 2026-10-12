@@ -72,8 +72,9 @@ export default async function DashboardPage() {
           label={`CA facturé · ${monthLabel}`}
           value={formatEURCompact(k.revenueThisMonth)}
           hint={
-            k.revenueDelta === null
-              ? `${k.invoicesThisMonth} factures émises, hors taxes`
+            // Une variation extrême (mois précédent quasi vide) n'apporte rien : on affiche le volume.
+            k.revenueDelta === null || Math.abs(k.revenueDelta) > 3
+              ? `${k.invoicesThisMonth} facture${k.invoicesThisMonth > 1 ? "s" : ""} émise${k.invoicesThisMonth > 1 ? "s" : ""}, hors taxes`
               : `${formatPercent(k.revenueDelta)} par rapport au mois dernier`
           }
           tone={k.revenueDelta !== null && k.revenueDelta >= 0 ? "positive" : "default"}

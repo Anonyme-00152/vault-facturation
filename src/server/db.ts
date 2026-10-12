@@ -6,7 +6,8 @@ import { env } from "@/env";
 import { PrismaClient } from "@/generated/prisma/client";
 
 function createClient() {
-  const adapter = new PrismaPg({ connectionString: env().DATABASE_URL });
+  // Sessions en UTC : horodatages identiques quel que soit le fuseau du serveur PostgreSQL.
+  const adapter = new PrismaPg({ connectionString: env().DATABASE_URL, options: "-c TimeZone=UTC" });
   return new PrismaClient({ adapter, log: ["warn", "error"] });
 }
 

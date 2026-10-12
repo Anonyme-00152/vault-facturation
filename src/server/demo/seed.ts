@@ -148,9 +148,18 @@ export async function seedDemo(options: { reset?: boolean; ifEmpty?: boolean } =
   }
 
   /* ── Factures : 46 émises dans l'ordre chronologique, 4 brouillons ── */
+  // Répartition régulière : 3 ou 4 factures par mois sur les 11 derniers mois, 6 ce mois-ci.
   const dayOfMonth = today.getUTCDate();
+  const perMonth = [4, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4];
   const offsets = [
-    ...Array.from({ length: 40 }, () => random.int(Math.max(dayOfMonth, 20), 360)),
+    ...perMonth.flatMap((count, index) => {
+      const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (index + 1), 1));
+      const monthDays = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0)).getUTCDate();
+      return Array.from({ length: count }, () => {
+        const day = addDays(monthStart, random.int(0, monthDays - 1));
+        return Math.round((today.getTime() - day.getTime()) / 86_400_000);
+      });
+    }),
     ...Array.from({ length: 6 }, () => random.int(1, Math.max(1, Math.min(dayOfMonth - 1, 20)))),
   ].sort((a, b) => b - a);
 

@@ -49,6 +49,8 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       AUTH_TRUST_HOST: "true"
       LOG_LEVEL: info
+      # Démo locale : aide à la connexion des comptes fictifs. Mettre "false" avec de vraies données.
+      DEMO_MODE: ${DEMO_MODE:-true}
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
