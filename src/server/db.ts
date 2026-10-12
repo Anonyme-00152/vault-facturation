@@ -12,11 +12,24 @@ function createClient() {
 }
 
 // Une seule instance par processus (le rechargement à chaud en recréerait sinon à chaque édition).
-const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createClient> };
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const db = globalForPrisma.prisma ?? createClient();
+function client(): PrismaClient {
+  globalForPrisma.prisma ??= createClient();
+  return globalForPrisma.prisma;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+/**
+ * Client créé au premier usage, jamais au chargement du module : `next build` peut
+ * analyser les routes sans aucune variable d'environnement (image Docker sans secrets).
+ */
+export const db = new Proxy({} as PrismaClient, {
+  get(_, property) {
+    const instance = client();
+    const value = Reflect.get(instance, property, instance);
+    return typeof value === "function" ? value.bind(instance) : value;
+  },
+});
 
-export type Db = typeof db;
+export type Db = PrismaClient;
 export type Tx = Parameters<Parameters<Db["$transaction"]>[0]>[0];
