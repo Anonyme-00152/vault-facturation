@@ -1,0 +1,63 @@
+# Lancement complet en une commande :  docker compose up
+# Aucun secret n'est versionné : ils sont générés au premier démarrage
+# dans le volume `secrets`, puis réutilisés.
+
+name: vault-facturation
+
+services:
+  secrets:
+    image: alpine:3.22
+    command: ["sh", "/scripts/ensure-secrets.sh"]
+    volumes:
+      - secrets:/secrets
+      - ./docker/ensure-secrets.sh:/scripts/ensure-secrets.sh:ro
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: vault
+      POSTGRES_DB: vault
+      POSTGRES_PASSWORD_FILE: /secrets/db_password
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault -d vault"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    # Pas de port publié : la base n'est joignable que depuis le réseau interne.
+
+  setup:
+    build:
+      context: .
+      target: tools
+    volumes:
+      - secrets:/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runner
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_TRUST_HOST: "true"
+      LOG_LEVEL: info
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - secrets:/secrets:ro
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  secrets:
