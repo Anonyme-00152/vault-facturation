@@ -58,13 +58,14 @@ async function assertActiveClient(tx: Tx, clientId: string) {
   if (client.anonymizedAt) throw new DomainError("Ce client a été anonymisé : il ne peut plus être facturé.");
 }
 
-export async function createDraft(data: DraftData, createdById: string | null) {
+export async function createDraft(data: DraftData, createdById: string | null, options: { createdAt?: Date } = {}) {
   return db.$transaction(async (tx) => {
     await assertActiveClient(tx, data.clientId);
     return tx.invoice.create({
       data: {
         id: uuidv7(),
         ...draftFields(data, parisToday()),
+        ...(options.createdAt ? { createdAt: options.createdAt } : {}),
         createdById,
         lines: { create: linesData(data.lines) },
       },
@@ -122,8 +123,13 @@ export async function issueInvoice(id: string, options: { issueDate?: Date } = {
     const totals = computeTotals(invoice.lines);
     const settings = await getSettings(tx);
 
+    // Émission « historique » (données de démonstration) : horodatée au jour d'émission.
+    const sentAt = options.issueDate ? new Date(issueDate.getTime() + 9.5 * 3600 * 1000) : new Date();
+
     // Une facture émise compte comme activité pour la durée de conservation du client.
-    await tx.client.update({ where: { id: invoice.clientId }, data: { lastActivityAt: new Date() } });
+    if (invoice.client.lastActivityAt < sentAt) {
+      await tx.client.update({ where: { id: invoice.clientId }, data: { lastActivityAt: sentAt } });
+    }
 
     return tx.invoice.update({
       where: { id },
@@ -135,7 +141,7 @@ export async function issueInvoice(id: string, options: { issueDate?: Date } = {
         issueDate,
         serviceDate: invoice.serviceDate ?? issueDate,
         dueDate: addDays(issueDate, invoice.paymentTermsDays),
-        sentAt: new Date(),
+        sentAt,
         totalHtCents: totals.totalHtCents,
         totalVatCents: totals.totalVatCents,
         totalTtcCents: totals.totalTtcCents,

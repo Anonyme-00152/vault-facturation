@@ -141,7 +141,10 @@ export async function seedDemo(options: { reset?: boolean; ifEmpty?: boolean } =
   }
   const active = clients.filter((client) => !inactive.includes(client));
   for (const client of active) {
-    await db.client.update({ where: { id: client.id }, data: { createdAt: addDays(today, -400) } });
+    await db.client.update({
+      where: { id: client.id },
+      data: { createdAt: addDays(today, -400), lastActivityAt: addDays(today, -400) },
+    });
   }
 
   /* ── Factures : 46 émises dans l'ordre chronologique, 4 brouillons ── */
@@ -155,11 +158,12 @@ export async function seedDemo(options: { reset?: boolean; ifEmpty?: boolean } =
 
   for (const [index, offset] of offsets.entries()) {
     const client = random.pick(active);
+    const issueDate = addDays(today, -offset);
     const draft = await createDraft(
       { clientId: client.id, paymentTermsDays: client.terms, lines: randomLines(random, client.type) },
       accountant.id,
+      { createdAt: new Date(issueDate.getTime() + 8 * 3600 * 1000) },
     );
-    const issueDate = addDays(today, -offset);
     await issueInvoice(draft.id, { issueDate });
 
     const dueDate = addDays(issueDate, client.terms);
@@ -167,7 +171,9 @@ export async function seedDemo(options: { reset?: boolean; ifEmpty?: boolean } =
     const paid = overdueSlots.has(index) ? false : pastDue ? true : random.chance(0.3);
     if (paid) {
       const delay = random.int(2, Math.max(3, client.terms));
-      const paidAt = addDays(issueDate, Math.min(delay, offset - 1));
+      const paidAt = new Date(
+        Math.min(addDays(issueDate, Math.min(delay, offset - 1)).getTime() + 14 * 3600 * 1000, Date.now() - 3_600_000),
+      );
       await markPaid(draft.id, paidAt);
     }
   }
